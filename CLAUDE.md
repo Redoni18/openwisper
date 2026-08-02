@@ -22,6 +22,7 @@ over HTTP/2 (`curl --http1.1` works).
 - `make deps` — vendor + build whisper.cpp (pinned tag inside scripts/fetch_whisper.sh)
 - `make model [SIZE=small.en]` — download a ggml model to App Support
 - `make app` / `make install [CODESIGN_IDENTITY="OpenWisper Dev"]` — bundle + sign
+- `make dmg` — package dist/OpenWisper.app into dist/OpenWisper.dmg (drag-to-install)
 - `make smoke` — offline E2E: tiny.en + Resources/samples/jfk.wav must transcribe
 - `swift test` (via toolchain) — swift-testing only; **XCTest does not exist on this host**
 - `swift run pill-demo` — visual check of the recording pill

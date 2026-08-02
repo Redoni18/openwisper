@@ -114,7 +114,7 @@ struct PermissionsPage: View {
                 }
             }
 
-            Text("Input Monitoring and Accessibility cannot be granted from a dialog — the button asks macOS (which is what puts OpenWisper in the list at all) and then opens the pane so you can flip the switch. **Quit and relaunch OpenWisper afterwards:** macOS does not always hand a running process its new rights.")
+            Text("Input Monitoring and Accessibility can't be turned on from a dialog alone — the button asks macOS (so OpenWisper appears in the list) and then opens System Settings so you can flip the switch. **Quit and reopen OpenWisper afterwards** — a running copy doesn't always pick up new permissions.")
                 .formFootnote()
         }
     }
@@ -175,8 +175,8 @@ struct PermissionsPage: View {
                         Text(
                             """
                             System Settings → Keyboard → **“Press 🌐 key to”** → **Do Nothing**. Otherwise holding fn \
-                            opens the emoji picker or starts Apple's own dictation on top of OpenWisper. Check \
-                            Keyboard → Dictation while you are there, and make sure its shortcut is not the globe key either.
+                            opens the emoji picker or starts Apple's dictation on top of OpenWisper. Check \
+                            Keyboard → Dictation while you're there, and make sure its shortcut isn't the globe key either.
                             """
                         )
                         .font(.system(size: 11.5))
@@ -186,7 +186,7 @@ struct PermissionsPage: View {
                 }
             }
 
-            Text("This pane cannot be opened reliably from another app — open System Settings and go to Keyboard yourself. Or sidestep it entirely with a different hotkey: `\"hotkey\": { \"key\": \"f13\" }` in config.json.")
+            Text("This pane can't be opened reliably from another app — open System Settings and go to Keyboard yourself. Or pick a different hotkey in the advanced settings file on the Model page.")
                 .formFootnote()
         }
     }

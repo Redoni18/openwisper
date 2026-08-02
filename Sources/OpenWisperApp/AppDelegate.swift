@@ -56,6 +56,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// costs an NSWindow plus a SwiftUI hosting view.
     private var mainWindow: MainWindowController?
 
+    /// The in-flight model download, if any. One at a time; dropped on any
+    /// terminal event so the next attempt starts clean.
+    private var modelDownloader: ModelDownloader?
+
     /// Warnings already shown this session; each is surfaced exactly once.
     private var shownWarnings: Set<String> = []
 
@@ -283,6 +287,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             engineDetail: { [weak self] in self?.engineDetailText() ?? "no engine" },
             localModel: { [weak self] in self?.localModelInfo() ?? LocalModelInfo(fileName: Defaults.defaultModelFile) },
             apiKeys: { [weak self] in self?.apiKeyPresence() ?? APIKeyPresence() },
+            setAPIKey: { [weak self] kind, value in self?.setAPIKey(kind, to: value) },
+            downloadModel: { [weak self] onEvent in self?.startModelDownload(onEvent) },
+            cancelModelDownload: { [weak self] in self?.modelDownloader?.cancel() },
             isCleanupEnabled: { [weak self] in self?.config.cleanup.enabled ?? false },
             setCleanupEnabled: { [weak self] enabled in self?.setCleanupEnabled(enabled) },
             cleanupDetail: { [weak self] in self?.cleanupDetailText() ?? "unavailable" },
@@ -318,6 +325,61 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         return LocalModelInfo(fileName: url.lastPathComponent, byteSize: byteSize)
     }
 
+    /// Saves (or removes) a provider key in the App Support `.env`, then
+    /// reloads the environment and re-resolves everything a key can affect —
+    /// the cleaner and, through `.auto` or an explicit cloud choice, the
+    /// engine. The value itself is written to disk and forgotten; it is never
+    /// logged and never flows back into the window.
+    private func setAPIKey(_ kind: APIKeyKind, to value: String?) {
+        let variable: String
+        switch kind {
+        case .groq: variable = "GROQ_API_KEY"
+        case .openai: variable = "OPENAI_API_KEY"
+        case .anthropic: variable = "ANTHROPIC_API_KEY"
+        }
+        do {
+            try Env.setValue(value, forKey: variable, in: AppPaths.envURL)
+        } catch {
+            Log.app.error(
+                "Could not write \(variable, privacy: .public) to .env: \(error.localizedDescription, privacy: .public)"
+            )
+            return
+        }
+        env = Env.load()
+        controller?.cleaner = LLMCleaner.make(config: config.cleanup, env: env)
+        selectEngine(announce: false)
+        Log.app.info("\(variable, privacy: .public) \(value == nil ? "removed" : "saved", privacy: .public)")
+    }
+
+    /// The window's Download button. Fetches the recommended model into the
+    /// models folder, then re-resolves the engine so a `local` (or `auto`)
+    /// choice that was stuck on "no model" starts working immediately.
+    private func startModelDownload(_ onEvent: @escaping (ModelDownloadEvent) -> Void) {
+        guard modelDownloader == nil else { return }
+        guard let url = URL(string: Defaults.defaultModelURL) else {
+            onEvent(.failed(message: "The download address is invalid — please report this."))
+            return
+        }
+
+        let destination = AppPaths.modelsDir.appendingPathComponent(Defaults.defaultModelFile)
+        let downloader = ModelDownloader(url: url, destination: destination) { [weak self] event in
+            guard let self else { return }
+            switch event {
+            case .finished:
+                self.modelDownloader = nil
+                self.selectEngine(announce: false)
+            case .cancelled, .failed:
+                self.modelDownloader = nil
+            case .progress:
+                break
+            }
+            onEvent(event)
+        }
+        modelDownloader = downloader
+        downloader.start()
+        Log.app.info("Model download started: \(Defaults.defaultModelURL, privacy: .public)")
+    }
+
     /// Presence only. Key *values* never leave `Env`.
     private func apiKeyPresence() -> APIKeyPresence {
         APIKeyPresence(
@@ -332,8 +394,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func cleanupDetailText() -> String {
         guard let cleaner = LLMCleaner.make(config: config.cleanup, env: env) else {
             return config.cleanup.enabled
-                ? "No API key — cleanup is skipped, raw transcripts are inserted"
-                : "Off — raw transcripts are inserted"
+                ? "No API key — tidying is skipped, you'll get exactly what you said"
+                : "Off — you'll get exactly what you said"
         }
         return "\(Self.providerName(cleaner.provider)) · \(cleaner.model)"
     }
@@ -662,15 +724,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         let alert = NSAlert()
         alert.alertStyle = .warning
-        alert.messageText = "OpenWisper cannot use the transcription engine you configured"
+        alert.messageText = "OpenWisper needs a quick setup step"
         alert.informativeText = pending.joined(separator: "\n\n")
-        alert.addButton(withTitle: "OK")
-        alert.addButton(withTitle: "Open OpenWisper Folder…")
+        // Every warning's fix now lives on the Model page (download the model,
+        // add a key), so the button goes straight there.
+        alert.addButton(withTitle: "Open Model Page…")
+        alert.addButton(withTitle: "Not Now")
 
         NSApp.activate()
-        if alert.runModal() == .alertSecondButtonReturn {
-            AppPaths.ensureDirectories()
-            NSWorkspace.shared.open(AppPaths.appSupport)
+        if alert.runModal() == .alertFirstButtonReturn {
+            showMainWindow(.model)
         }
     }
 }

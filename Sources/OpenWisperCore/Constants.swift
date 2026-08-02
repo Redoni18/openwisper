@@ -12,6 +12,16 @@ public enum Defaults {
     /// Model file used when `transcription.modelPath` is not set.
     public static let defaultModelFile = "ggml-small.en.bin"
 
+    /// Where the in-app downloader fetches `defaultModelFile` from — the same
+    /// canonical whisper.cpp repository `scripts/download_model.sh` uses.
+    public static let defaultModelURL =
+        "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/\(defaultModelFile)"
+
+    /// Approximate size of `defaultModelFile`, for the download button's label
+    /// and as a floor under what counts as a complete download (an HTML error
+    /// page is never hundreds of megabytes).
+    public static let defaultModelApproxBytes: Int64 = 488_000_000
+
     /// Local transcript history, next to config.json (see `AppPaths.historyURL`).
     public static let historyFile = "history.json"
 

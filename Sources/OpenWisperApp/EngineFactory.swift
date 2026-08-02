@@ -127,7 +127,7 @@ enum EngineFactory {
 
         var warnings = warnings
         if !transcriber.isModelAvailable {
-            warnings.append(missingModelWarning(modelURL))
+            warnings.append(missingModelWarning())
         }
 
         return EngineSelection(
@@ -202,24 +202,18 @@ enum EngineFactory {
         }
     }
 
-    private static func missingModelWarning(_ url: URL) -> String {
+    private static func missingModelWarning() -> String {
         """
-        No whisper model at:
-        \(url.path)
-
-        Run `make model` in the OpenWisper repo to download the default model, or point \
-        "transcription": { "modelPath": … } in config.json at one you already have. \
-        Until then every local dictation ends in an error.
+        OpenWisper can transcribe entirely on this Mac, but the speech model isn't downloaded yet. \
+        Open the Model page and click Download.
         """
     }
 
     private static func missingKeyWarning(for kind: EngineKind) -> String {
-        let variable = kind == .groq ? "GROQ_API_KEY" : "OPENAI_API_KEY"
+        let name = displayName(kind)
         return """
-        transcription.engine is "\(kind.rawValue)", but \(variable) is not set.
-
-        Add it to \(AppPaths.envURL.path) and pick the engine again from the menu. \
-        OpenWisper has fallen back to the next engine that is actually available.
+        \(name) needs an API key. Add it on the Model page under API keys. \
+        OpenWisper switched to what's available for now.
         """
     }
 }

@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OpenWisper — private dictation for your Mac</title>
+<meta name="description" content="Hold a key, talk, and the words appear wherever your cursor is — in any app. OpenWisper transcribes on your own Mac, works offline, and never sends your voice anywhere. Free and open source.">
+<link rel="icon" type="image/png" href="assets/icon.png">
+<meta property="og:title" content="OpenWisper — private dictation for your Mac">
+<meta property="og:description" content="Hold a key, talk, and the words appear wherever your cursor is. Runs on your own Mac, works offline. Free and open source.">
+<meta property="og:image" content="assets/icon.png">
+<style>
+  :root {
+    --bg: #FAF7F1;
+    --bg-deep: #F1ECE1;
+    --card: #FFFFFF;
+    --stroke: rgba(0, 0, 0, 0.07);
+    --text: #2A2724;
+    --muted: #6E675E;
+    --accent: #4B87E2;
+    --accent-press: #3D74C9;
+    --brown: #A95F33;
+    --cream: #F6E8C6;
+    --shadow: 0 2px 14px rgba(0, 0, 0, 0.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #211F1C;
+      --bg-deep: #1B1917;
+      --card: #2B2825;
+      --stroke: rgba(255, 255, 255, 0.09);
+      --text: #EFEAE2;
+      --muted: #A79E92;
+      --accent: #6AA0F0;
+      --accent-press: #5B8FDD;
+      --brown: #D08A5B;
+      --cream: #3B3324;
+      --shadow: 0 2px 14px rgba(0, 0, 0, 0.35);
+    }
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .display {
+    font-family: ui-rounded, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  .wrap { max-width: 880px; margin: 0 auto; padding: 0 24px; }
+
+  /* ---- Hero ---- */
+  header { padding: 72px 0 56px; text-align: center; }
+
+  .mark {
+    width: 96px; height: 96px;
+    border-radius: 22.4%;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--stroke);
+  }
+
+  h1 { font-size: clamp(34px, 6vw, 52px); margin-top: 22px; line-height: 1.12; }
+
+  .tagline {
+    font-size: clamp(16px, 2.6vw, 19px);
+    color: var(--muted);
+    max-width: 34em;
+    margin: 14px auto 0;
+  }
+
+  .buttons {
+    display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;
+    margin-top: 30px;
+  }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 12px 24px;
+    border-radius: 999px;
+    font-size: 15.5px; font-weight: 600;
+    text-decoration: none;
+    transition: transform 0.12s ease, background 0.12s ease;
+  }
+  .btn:active { transform: scale(0.98); }
+
+  .btn-primary { background: var(--accent); color: #fff; box-shadow: var(--shadow); }
+  .btn-primary:hover { background: var(--accent-press); }
+
+  .btn-quiet {
+    background: var(--card); color: var(--text);
+    border: 1px solid var(--stroke);
+  }
+  .btn-quiet:hover { border-color: var(--accent); }
+
+  .fineprint { margin-top: 14px; font-size: 13px; color: var(--muted); }
+  .fineprint span { margin: 0 7px; }
+
+  /* ---- Screenshot ---- */
+  .shot { padding: 8px 0 30px; }
+  .shot img {
+    width: 100%; height: auto; display: block;
+    border-radius: 14px;
+    border: 1px solid var(--stroke);
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.12);
+  }
+
+  /* ---- Sections ---- */
+  section { padding: 44px 0; }
+
+  .kicker {
+    font-size: 12px; font-weight: 600; letter-spacing: 0.09em;
+    text-transform: uppercase; color: var(--brown);
+  }
+
+  h2 { font-size: clamp(24px, 4vw, 30px); margin-top: 6px; }
+
+  .lede { color: var(--muted); margin-top: 8px; max-width: 40em; }
+
+  /* ---- Feature grid ---- */
+  .grid {
+    display: grid; gap: 14px; margin-top: 26px;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--stroke);
+    border-radius: 14px;
+    padding: 20px;
+    box-shadow: var(--shadow);
+  }
+  .card h3 { font-size: 15.5px; margin-bottom: 6px; }
+  .card p { font-size: 13.5px; color: var(--muted); }
+  .card .glyph { font-size: 22px; margin-bottom: 10px; display: block; }
+
+  /* ---- Steps ---- */
+  ol.steps { list-style: none; margin-top: 26px; display: grid; gap: 12px; }
+  ol.steps li {
+    background: var(--card);
+    border: 1px solid var(--stroke);
+    border-radius: 14px;
+    padding: 18px 20px;
+    display: flex; gap: 16px; align-items: baseline;
+    box-shadow: var(--shadow);
+  }
+  ol.steps .n {
+    font-family: ui-rounded, -apple-system, sans-serif;
+    font-weight: 700; font-size: 15px;
+    color: var(--accent);
+    flex: 0 0 auto;
+    width: 30px; height: 30px;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: color-mix(in srgb, var(--accent) 12%, transparent);
+    border-radius: 9px;
+    align-self: center;
+  }
+  ol.steps b { display: block; font-size: 15px; }
+  ol.steps p { font-size: 13.5px; color: var(--muted); }
+
+  /* ---- First-open callout ---- */
+  .callout {
+    background: var(--cream);
+    border: 1px solid color-mix(in srgb, var(--brown) 25%, transparent);
+    border-radius: 14px;
+    padding: 22px 24px;
+    margin-top: 26px;
+  }
+  .callout h3 { font-size: 16px; }
+  .callout p { font-size: 14px; margin-top: 8px; }
+  .callout p + p { margin-top: 10px; }
+  .callout b { font-weight: 600; }
+
+  /* ---- Footer ---- */
+  footer {
+    margin-top: 44px;
+    padding: 34px 0 46px;
+    background: var(--bg-deep);
+    border-top: 1px solid var(--stroke);
+    text-align: center;
+    font-size: 13.5px;
+    color: var(--muted);
+  }
+  footer a { color: var(--accent); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+
+  kbd {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.85em;
+    background: var(--bg-deep);
+    border: 1px solid var(--stroke);
+    border-bottom-width: 2px;
+    border-radius: 6px;
+    padding: 1px 7px;
+  }
+</style>
+</head>
+<body>
+
+<header class="wrap">
+  <img class="mark" src="assets/icon.png" alt="OpenWisper app icon — a friendly monkey on a blue background" width="96" height="96">
+  <h1 class="display">Talk. It types.<br>Nothing leaves your&nbsp;Mac.</h1>
+  <p class="tagline">
+    Hold a key, say what you mean, let go — and the words land wherever your
+    cursor is, in any app. OpenWisper listens and transcribes on your own Mac,
+    so it works with the Wi‑Fi off and your voice never goes anywhere.
+  </p>
+  <div class="buttons">
+    <a class="btn btn-primary" href="https://github.com/Redoni18/openwisper/releases/latest/download/OpenWisper.dmg">
+      &#8595;&nbsp; Download for Mac
+    </a>
+    <a class="btn btn-quiet" href="https://github.com/Redoni18/openwisper">
+      View on GitHub
+    </a>
+  </div>
+  <p class="fineprint">Free &amp; open source<span>·</span>macOS 14 or later<span>·</span>Apple&nbsp;Silicon</p>
+</header>
+
+<div class="wrap shot">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="screenshots/window-history-dark.png">
+    <img src="screenshots/window-history-light.png" alt="The OpenWisper window showing your dictation history, each entry one click away from the clipboard" loading="lazy">
+  </picture>
+</div>
+
+<section class="wrap">
+  <p class="kicker">Why OpenWisper</p>
+  <h2 class="display">Dictation that minds its own business</h2>
+  <div class="grid">
+    <div class="card">
+      <span class="glyph">&#128274;</span>
+      <h3>Private by design</h3>
+      <p>Transcription happens on your Mac. No account, no subscription, no
+      analytics — your voice is never uploaded and never saved to disk.</p>
+    </div>
+    <div class="card">
+      <span class="glyph">&#9992;&#65039;</span>
+      <h3>Works offline</h3>
+      <p>On a plane, in a dead spot, on hotel Wi‑Fi — it makes no difference.
+      Everything it needs lives on your machine.</p>
+    </div>
+    <div class="card">
+      <span class="glyph">&#10024;</span>
+      <h3>Cleans up after you</h3>
+      <p>Ums, false starts and missing punctuation are tidied away, so what
+      lands is what you meant to say — never a rewrite of it.</p>
+    </div>
+    <div class="card">
+      <span class="glyph">&#128221;</span>
+      <h3>Types anywhere</h3>
+      <p>Mail, Slack, your browser, your notes — if you can put a cursor in
+      it, you can talk into it. Nothing to switch to, nothing to copy.</p>
+    </div>
+  </div>
+</section>
+
+<section class="wrap">
+  <p class="kicker">Getting started</p>
+  <h2 class="display">Set up in about a minute</h2>
+  <ol class="steps">
+    <li>
+      <span class="n">1</span>
+      <div>
+        <b>Download and install</b>
+        <p>Open the file you downloaded and drag OpenWisper into your
+        Applications folder.</p>
+      </div>
+    </li>
+    <li>
+      <span class="n">2</span>
+      <div>
+        <b>Open it and say yes a few times</b>
+        <p>OpenWisper lives in your menu bar — look for the little microphone
+        at the top of the screen. On first launch it walks you through the
+        three permissions macOS requires, and downloads its speech model with
+        one click.</p>
+      </div>
+    </li>
+    <li>
+      <span class="n">3</span>
+      <div>
+        <b>Hold <kbd>fn</kbd> and talk</b>
+        <p>In any text field: hold the key, speak, let go. Your words appear
+        right where your cursor is. Double-tap instead to dictate hands-free.</p>
+      </div>
+    </li>
+  </ol>
+
+  <div class="callout">
+    <h3>&#9995; If your Mac says the app “can’t be opened”</h3>
+    <p>That message is expected the very first time, and the app is safe to
+    open. OpenWisper is free software and isn’t registered with Apple’s paid
+    developer program, so macOS is extra cautious with it.</p>
+    <p><b>On macOS 15 (Sequoia) or later:</b> open <b>System Settings →
+    Privacy&nbsp;&amp;&nbsp;Security</b>, scroll to the bottom, and click
+    <b>Open Anyway</b> next to OpenWisper. Confirm, and you’re in.</p>
+    <p><b>On macOS 14 (Sonoma):</b> right-click OpenWisper in your
+    Applications folder, choose <b>Open</b>, then click <b>Open</b> in the
+    dialog.</p>
+    <p>You only ever do this once — after that it opens like any other app.
+    Prefer to see exactly what you’re running? The full source code is
+    <a href="https://github.com/Redoni18/openwisper">on GitHub</a>, and you
+    can build it yourself.</p>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p>
+      OpenWisper is free, open-source software released under the
+      <a href="https://github.com/Redoni18/openwisper/blob/main/LICENSE">MIT license</a>.
+      <br>
+      <a href="https://github.com/Redoni18/openwisper">Source code</a> ·
+      <a href="https://github.com/Redoni18/openwisper/issues">Report a problem</a> ·
+      <a href="https://github.com/Redoni18/openwisper#readme">Documentation</a>
+    </p>
+  </div>
+</footer>
+
+</body>
+</html>

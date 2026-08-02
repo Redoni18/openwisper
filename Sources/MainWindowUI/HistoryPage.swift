@@ -128,7 +128,7 @@ struct HistoryPage: View {
                 .controlSize(.mini)
                 .font(.system(size: 12))
                 .tint(OWTheme.accent)
-                .help("Keep a local record of every transcript in ~/Library/Application Support/OpenWisper/history.json.")
+                .help("Keep a local record of everything OpenWisper types for you.")
 
             Button("Clear All…") { model.isConfirmingClear = true }
                 .buttonStyle(.owQuietDestructive)
@@ -147,7 +147,7 @@ struct HistoryPage: View {
             Button("Clear All", role: .destructive) { model.clearAll() }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("This erases history.json. It cannot be undone.")
+            Text("This deletes every saved transcript. It cannot be undone.")
         }
     }
 

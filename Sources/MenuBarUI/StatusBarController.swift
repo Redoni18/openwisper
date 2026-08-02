@@ -87,8 +87,8 @@ private enum PermissionRow: Int, CaseIterable {
     var reason: String {
         switch self {
         case .microphone: return "Needed to record your voice."
-        case .inputMonitoring: return "Needed for the global dictation hotkey."
-        case .accessibility: return "Needed to paste the transcript into the focused app."
+        case .inputMonitoring: return "Needed for the dictation hotkey."
+        case .accessibility: return "Needed to paste what you said into the app you're using."
         }
     }
 
@@ -236,9 +236,9 @@ public final class StatusBarController: NSObject, NSMenuDelegate {
         menu.addItem(.separator())
 
         // --- Files ----------------------------------------------------------
-        menu.addItem(actionItem("Open Config File", #selector(openConfigFile(_:))))
+        menu.addItem(actionItem("Advanced Settings File", #selector(openConfigFile(_:))))
         menu.addItem(actionItem("Open Models Folder", #selector(openModelsFolder(_:))))
-        menu.addItem(actionItem("Reload Config", #selector(reloadConfigFromDisk(_:))))
+        menu.addItem(actionItem("Reload Settings", #selector(reloadConfigFromDisk(_:))))
 
         menu.addItem(.separator())
 
@@ -322,7 +322,7 @@ public final class StatusBarController: NSObject, NSMenuDelegate {
             launchAtLoginItem.isEnabled = false
             launchAtLoginItem.state = .off
             launchAtLoginItem.toolTip =
-                "Only an installed .app can be a login item. Run `make install`, then launch OpenWisper from /Applications."
+                "Move OpenWisper to the Applications folder to use this."
             return
         }
         let status = SMAppService.mainApp.status

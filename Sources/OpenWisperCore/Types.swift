@@ -49,23 +49,30 @@ public enum OWError: Error, LocalizedError, Equatable {
     public var errorDescription: String? {
         switch self {
         case .micPermissionDenied:
-            return "Microphone access is not granted."
+            return "Microphone access isn't granted."
         case .accessibilityNotGranted:
-            return "Accessibility permission missing (needed to paste)."
+            return "Accessibility isn't granted — needed to paste what you said."
         case .inputMonitoringNotGranted:
-            return "Input Monitoring permission missing (needed for the hotkey)."
-        case .modelNotFound(let path):
-            return "Whisper model not found at \(path). Run `make model`."
+            return "Input Monitoring isn't granted — needed for the hotkey."
+        case .modelNotFound:
+            return "The speech model isn't downloaded yet. Open OpenWisper and click Download on the Model page."
         case .apiKeyMissing(let key):
-            return "Missing API key \(key) — add it to your .env."
+            let provider: String
+            switch key {
+            case "GROQ_API_KEY": provider = "Groq"
+            case "OPENAI_API_KEY": provider = "OpenAI"
+            case "ANTHROPIC_API_KEY": provider = "Anthropic"
+            default: provider = "cloud"
+            }
+            return "Add your \(provider) API key on the Model page."
         case .emptyRecording:
-            return "Recording was empty or too short."
+            return "That recording was empty or too short."
         case .transcriptionFailed(let msg):
-            return "Transcription failed: \(msg)"
+            return "Couldn't transcribe that: \(msg)"
         case .cleanupFailed(let msg):
-            return "Cleanup failed: \(msg)"
+            return "Couldn't tidy that up: \(msg)"
         case .insertionFailed(let msg):
-            return "Could not insert text: \(msg)"
+            return "Couldn't paste the text: \(msg)"
         case .network(let msg):
             return "Network error: \(msg)"
         }

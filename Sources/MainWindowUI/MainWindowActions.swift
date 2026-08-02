@@ -40,8 +40,8 @@ public enum MainWindowPage: String, CaseIterable, Identifiable, Hashable {
     public var subtitle: String {
         switch self {
         case .history: return "Everything OpenWisper has typed for you, newest first."
-        case .model: return "Which engine transcribes your speech, and what it needs."
-        case .permissions: return "The macOS approvals OpenWisper cannot work without."
+        case .model: return "How your speech is turned into text, and what it needs."
+        case .permissions: return "The macOS approvals OpenWisper needs to work."
         }
     }
 }
@@ -69,6 +69,25 @@ public struct LocalModelInfo: Equatable {
         guard let byteSize else { return nil }
         return ByteCountFormatter.string(fromByteCount: byteSize, countStyle: .file)
     }
+}
+
+/// The three providers a key can be saved for. Raw values match `EngineKind`
+/// where the two overlap, so the engine cards can open the matching key field.
+public enum APIKeyKind: String, CaseIterable, Identifiable {
+    case groq
+    case openai
+    case anthropic
+
+    public var id: String { rawValue }
+}
+
+/// One step of an in-app model download, delivered on the main thread.
+/// `fraction` is nil when the server did not say how big the file is.
+public enum ModelDownloadEvent: Equatable {
+    case progress(fraction: Double?, receivedBytes: Int64)
+    case finished
+    case cancelled
+    case failed(message: String)
 }
 
 /// Which API keys the app found — **presence only**. Key values never leave
@@ -106,8 +125,8 @@ public enum PermissionKind: String, CaseIterable, Identifiable {
     public var reason: String {
         switch self {
         case .microphone: return "Needed to record your voice."
-        case .inputMonitoring: return "Needed for the global dictation hotkey."
-        case .accessibility: return "Needed to paste the transcript into the focused app."
+        case .inputMonitoring: return "Needed for the dictation hotkey."
+        case .accessibility: return "Needed to paste what you said into the app you're using."
         }
     }
 
@@ -174,6 +193,18 @@ public struct MainWindowActions {
     public var localModel: () -> LocalModelInfo
     /// Which API keys exist — booleans only, never the values.
     public var apiKeys: () -> APIKeyPresence
+    /// Save (or, with nil, remove) a provider's API key. The value flows one
+    /// way — window → app — and is never readable back through this seam.
+    public var setAPIKey: (APIKeyKind, String?) -> Void
+
+    // --- Model download ---
+
+    /// Start downloading the recommended local model, reporting every step to
+    /// the handler (on the main thread). A download already in flight is left
+    /// alone. The app re-resolves its engine itself on `.finished`.
+    public var downloadModel: (@escaping (ModelDownloadEvent) -> Void) -> Void
+    /// Cancel an in-flight model download; the handler receives `.cancelled`.
+    public var cancelModelDownload: () -> Void
 
     // --- Cleanup ---
 
@@ -213,6 +244,9 @@ public struct MainWindowActions {
         engineDetail: @escaping () -> String,
         localModel: @escaping () -> LocalModelInfo,
         apiKeys: @escaping () -> APIKeyPresence,
+        setAPIKey: @escaping (APIKeyKind, String?) -> Void,
+        downloadModel: @escaping (@escaping (ModelDownloadEvent) -> Void) -> Void,
+        cancelModelDownload: @escaping () -> Void,
         isCleanupEnabled: @escaping () -> Bool,
         setCleanupEnabled: @escaping (Bool) -> Void,
         cleanupDetail: @escaping () -> String,
@@ -230,6 +264,9 @@ public struct MainWindowActions {
         self.engineDetail = engineDetail
         self.localModel = localModel
         self.apiKeys = apiKeys
+        self.setAPIKey = setAPIKey
+        self.downloadModel = downloadModel
+        self.cancelModelDownload = cancelModelDownload
         self.isCleanupEnabled = isCleanupEnabled
         self.setCleanupEnabled = setCleanupEnabled
         self.cleanupDetail = cleanupDetail

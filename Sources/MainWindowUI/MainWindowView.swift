@@ -192,25 +192,3 @@ enum StatusReading {
         StatusChip(label: label(for: status), color: color(for: status))
     }
 }
-
-/// "Key found" / "No key" — the only thing the UI is ever allowed to say about
-/// an API key. Values are never rendered, never copied, never logged.
-struct KeyPresenceLabel: View {
-    let variable: String
-    let isPresent: Bool
-
-    var body: some View {
-        HStack(spacing: 6) {
-            Image(systemName: isPresent ? "key.fill" : "key.slash")
-                .font(.system(size: 10, weight: .medium))
-                .foregroundStyle(isPresent ? Color.green : Color.secondary)
-            Text(variable)
-                .font(.system(size: 12, design: .monospaced))
-                .foregroundStyle(isPresent ? .primary : .secondary)
-            Chip(
-                text: isPresent ? "found" : "not set",
-                tint: isPresent ? .green : .secondary
-            )
-        }
-    }
-}

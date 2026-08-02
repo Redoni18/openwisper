@@ -62,7 +62,30 @@ README accuracy pass, final report.
 | Wave D app window & history | done — `TranscriptHistoryStore` + `HistoryRecordingInserter` (DictationController untouched), `history` config section, `MainWindowUI` with History/Model/Permissions, programmatic main menu so ⌘C/⌘W work in an LSUIElement window, "Open OpenWisper…" in the status menu, `applicationShouldHandleReopen`, `make setup`, `window-demo` snapshots; 107/107 tests green, debug + release builds clean, bundle launches and quits cleanly |
 | App icon (Sonnet worker, verified by Fable) | done — monkey artwork composited to the Big Sur squircle grid (824/1024, transparent corners, baked shadow), 10-size `AppIcon.icns` via iconutil, `CFBundleIconFile` + `make_app.sh` copy; design source kept in `Resources/AppIcon/` |
 | Wave E solo UI restyle (Fable, operator-requested solo) | done — see Wave E below; 107/107 green after, six snapshots (light+dark) inspected, bundle launch/reopen/quit clean |
+| Wave F distribution & consumer polish (Fable 5 + Cursor 4.5 fleet) | done — see Wave F below |
 | Deploy/TCC repair (Fable) | done — operator hit "two OpenWispers" + grants that never stuck: dist *and* /Applications were LS-registered under one bundle ID with different ad-hoc CDHashes, and `make install` used to replace the bundle under a running instance (zombie + single-instance guard = launches silently swallowed). Fixes: install pre-quits and relaunches, `lsregister -f` install / `-u` dist, `make_app.sh` auto-picks the "OpenWisper Dev" identity when present, modal onboarding replaced by the window's Permissions page. README updated (tccutil clean-slate block). |
+
+## Wave F — distribution & consumer polish
+
+Goal: a non-technical user can download a DMG from a landing page, drag the
+app to Applications, and be dictating minutes later — no clone, no terminal,
+no dotfiles. Orchestrated by Fable 5; two scoped tasks delegated to Cursor 4.5
+(grok) workers and reviewed by Fable.
+
+| # | Task | Owner | Result |
+|---|---|---|---|
+| F1 | In-app model download — `ModelDownloader` (URLSession, progress, cancel, atomic move), download card on the Model page, engine re-resolve on finish | Fable 5 | done |
+| F2 | In-app API keys — `Env.setValue` writer (0600, preserves unrelated lines), per-provider Add/Replace/Remove rows on the Model page, cloud engine card click opens the key field | Fable 5 | done |
+| F3 | DMG packaging — `scripts/make_dmg.sh` + `make dmg` (UDZO, Applications symlink, READ ME FIRST.txt, versioned + stable names) | Cursor 4.5 | done — mounted, codesign-verified, idempotent |
+| F4 | Non-technical copy pass over every user-facing string (no make/paths/env vars/LLM/whisper.cpp jargon; errors point at in-app fixes) | Cursor 4.5 | done — reviewed by Fable, one follow-up (warning alert button now opens the Model page) |
+| F5 | Landing page — `docs/index.html` (GitHub Pages `main`/`docs`), download button → releases/latest DMG, Gatekeeper first-open walkthrough, light+dark | Fable 5 | done — verified in browser both appearances |
+
+Verification: `swift build` clean, 117/117 tests (10 new Env-writer tests),
+`window-demo` 6/6 PNGs (README screenshots regenerated with the new copy),
+`make dmg` end-to-end + mount + strict codesign inside the image, model URL
+resolves (200, 487.6 MB). Release flow: `make dmg`, then attach
+`dist/OpenWisper.dmg` to a GitHub release; the site's download button uses
+`releases/latest/download/OpenWisper.dmg`.
 
 ## Wave D — app window & history
 

@@ -53,6 +53,67 @@ public struct Env {
         return v
     }
 
+    // MARK: - Writing
+
+    /// Sets (or, with `nil`, removes) one `KEY=VALUE` line in a `.env` file,
+    /// preserving every other line — comments, blank lines, unrelated keys —
+    /// exactly as they were. This is what lets the app take an API key pasted
+    /// into the window instead of making the user edit a hidden dotfile.
+    ///
+    /// The value is trimmed; a value that trims to empty means removal, so a
+    /// stray newline on a pasted key can never write `KEY=` and shadow nothing.
+    /// The file is created if missing and always written owner-only (0600):
+    /// it holds secrets.
+    public static func setValue(_ value: String?, forKey key: String, in fileURL: URL) throws {
+        let trimmed = value?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let newValue = (trimmed?.isEmpty == false) ? trimmed : nil
+
+        let existing = (try? String(contentsOf: fileURL, encoding: .utf8)) ?? ""
+        var lines = existing.isEmpty ? [] : existing.components(separatedBy: "\n")
+        // A trailing newline parses as one empty final element; drop it so we
+        // do not accumulate blank lines on every write.
+        if lines.last == "" { lines.removeLast() }
+
+        var replaced = false
+        lines = lines.compactMap { line -> String? in
+            guard defines(line, key: key) else { return line }
+            guard !replaced, let newValue else { return nil }  // drop duplicates / removals
+            replaced = true
+            return "\(key)=\(quoteIfNeeded(newValue))"
+        }
+        if !replaced, let newValue {
+            lines.append("\(key)=\(quoteIfNeeded(newValue))")
+        }
+
+        let text = lines.joined(separator: "\n") + (lines.isEmpty ? "" : "\n")
+        try FileManager.default.createDirectory(
+            at: fileURL.deletingLastPathComponent(), withIntermediateDirectories: true
+        )
+        try text.write(to: fileURL, atomically: true, encoding: .utf8)
+        try? FileManager.default.setAttributes(
+            [.posixPermissions: 0o600], ofItemAtPath: fileURL.path
+        )
+    }
+
+    /// Does this line assign `key`? Mirrors `parse`: `KEY=`, `export KEY=`,
+    /// surrounding whitespace — but never a comment.
+    private static func defines(_ rawLine: String, key: String) -> Bool {
+        var line = rawLine.trimmingCharacters(in: .whitespaces)
+        guard !line.isEmpty, !line.hasPrefix("#") else { return false }
+        if line.hasPrefix("export ") { line = String(line.dropFirst(7)).trimmingCharacters(in: .whitespaces) }
+        guard let eq = line.firstIndex(of: "=") else { return false }
+        return String(line[..<eq]).trimmingCharacters(in: .whitespaces) == key
+    }
+
+    /// `parse` strips one layer of double quotes, so quoting is round-trip safe
+    /// for values that would otherwise be misread (inline `#` starts a comment
+    /// in many .env dialects; leading/trailing spaces would be trimmed away).
+    private static func quoteIfNeeded(_ value: String) -> String {
+        let needsQuotes = value.contains("#") || value.contains(" ")
+            || value.hasPrefix("'") || value.hasPrefix("\"")
+        return needsQuotes ? "\"\(value)\"" : value
+    }
+
     public var groqKey: String? { self["GROQ_API_KEY"] }
     public var openaiKey: String? { self["OPENAI_API_KEY"] }
     public var anthropicKey: String? { self["ANTHROPIC_API_KEY"] }

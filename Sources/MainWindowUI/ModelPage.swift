@@ -24,6 +24,7 @@ struct ModelPage: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 22) {
                     engineSection
+                    keysSection
                     cleanupSection
                     configSection
                 }
@@ -49,7 +50,7 @@ struct ModelPage: View {
                         kind: kind,
                         isSelected: model.engine == kind,
                         status: status(for: kind),
-                        select: { model.setEngine(kind) }
+                        select: { select(kind) }
                     )
                 }
             }
@@ -67,17 +68,101 @@ struct ModelPage: View {
             .padding(.top, 2)
 
             if !model.localModel.isAvailable {
-                HStack(spacing: 8) {
-                    Text("Local needs a model on disk first — run `make model` in the repo.")
-                        .formFootnote()
-                    Button("Open Models Folder") { model.openModelsFolder() }
-                        .buttonStyle(.owQuiet)
-                }
+                downloadCard
             }
 
-            Text("Local never sends anything anywhere. The cloud engines upload each utterance's audio to their provider under your own API key, in exchange for speed (Groq) or OpenAI's hosted model.")
+            Text("Local never sends anything anywhere. Cloud options upload each recording to their provider under your own API key — Groq for speed, or OpenAI's hosted service.")
                 .formFootnote()
         }
+    }
+
+    /// Selecting a cloud engine that has no key yet also opens its key field —
+    /// choosing an engine and giving it what it needs are one gesture.
+    private func select(_ kind: EngineKind) {
+        model.setEngine(kind)
+        let keyKind: APIKeyKind? = switch kind {
+        case .groq: .groq
+        case .openai: .openai
+        case .local, .auto: nil
+        }
+        if let keyKind, !model.hasKey(keyKind), model.editingKey != keyKind {
+            model.beginKeyEntry(keyKind)
+        }
+    }
+
+    // MARK: Model download
+
+    /// Shown only while the local model file is missing: one button that
+    /// fetches it, with live progress. No terminal, no repo, no `make`.
+    private var downloadCard: some View {
+        OWCard {
+            switch model.modelDownload {
+            case .idle:
+                HStack(alignment: .center, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Get the on-device model")
+                            .font(.system(size: 13, weight: .medium))
+                        Text("A one-time \(Self.approxModelSize) download. After that, transcription works entirely on this Mac — even offline.")
+                            .font(.system(size: 11.5))
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    Spacer(minLength: 8)
+                    Button("Download") { model.startModelDownload() }
+                        .buttonStyle(.owPrimary)
+                }
+
+            case .downloading(let fraction, let receivedBytes):
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack(spacing: 12) {
+                        Text("Downloading the model…")
+                            .font(.system(size: 13, weight: .medium))
+                        Spacer(minLength: 8)
+                        Text(Self.progressLabel(fraction: fraction, receivedBytes: receivedBytes))
+                            .font(.system(size: 12).monospacedDigit())
+                            .foregroundStyle(.secondary)
+                        Button("Cancel") { model.cancelModelDownload() }
+                            .buttonStyle(.owQuiet)
+                    }
+                    if let fraction {
+                        ProgressView(value: fraction)
+                            .tint(OWTheme.accent)
+                    } else {
+                        ProgressView()
+                            .progressViewStyle(.linear)
+                            .tint(OWTheme.accent)
+                    }
+                }
+
+            case .failed(let message):
+                HStack(alignment: .center, spacing: 12) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.system(size: 14))
+                        .foregroundStyle(Color.orange)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("The download didn't finish")
+                            .font(.system(size: 13, weight: .medium))
+                        Text(message)
+                            .font(.system(size: 11.5))
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    Spacer(minLength: 8)
+                    Button("Try Again") { model.startModelDownload() }
+                        .buttonStyle(.owPrimary)
+                }
+            }
+        }
+    }
+
+    private static let approxModelSize = ByteCountFormatter.string(
+        fromByteCount: Defaults.defaultModelApproxBytes, countStyle: .file
+    )
+
+    private static func progressLabel(fraction: Double?, receivedBytes: Int64) -> String {
+        let received = ByteCountFormatter.string(fromByteCount: receivedBytes, countStyle: .file)
+        guard let fraction else { return received }
+        return "\(Int((fraction * 100).rounded()))% · \(received)"
     }
 
     private func status(for kind: EngineKind) -> EngineCard.Status {
@@ -102,6 +187,26 @@ struct ModelPage: View {
             : .init(text: "No key", tint: .secondary, icon: "key.slash")
     }
 
+    // MARK: API keys
+
+    private var keysSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            SectionLabel("API keys")
+
+            OWCard(padding: 0) {
+                ForEach(Array(APIKeyKind.allCases.enumerated()), id: \.element) { index, kind in
+                    if index > 0 {
+                        Divider().padding(.leading, 56)
+                    }
+                    KeyRow(model: model, kind: kind)
+                }
+            }
+
+            Text("Keys are optional — OpenWisper works fully offline without any. They are saved on this Mac only, never shown again, and never sent anywhere except to the provider you got them from.")
+                .formFootnote()
+        }
+    }
+
     // MARK: Cleanup
 
     private var cleanupSection: some View {
@@ -111,9 +216,9 @@ struct ModelPage: View {
             OWCard {
                 Toggle(isOn: model.cleanupEnabledBinding) {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Clean up transcripts with an LLM")
+                        Text("Tidy up your dictation with AI")
                             .font(.system(size: 13, weight: .medium))
-                        Text("Strips fillers and false starts, fixes punctuation. It never rephrases you.")
+                        Text("Removes fillers and false starts, fixes punctuation. It never rephrases you.")
                             .font(.system(size: 11.5))
                             .foregroundStyle(.secondary)
                     }
@@ -131,20 +236,10 @@ struct ModelPage: View {
                     Text(model.cleanupDetail)
                         .font(.system(size: 12, weight: .medium))
                     Spacer(minLength: 8)
-                    Button("Open Folder") { model.openAppSupportFolder() }
-                        .buttonStyle(.owQuiet)
-                        .help("The .env file with your keys lives here.")
                 }
-
-                VStack(alignment: .leading, spacing: 6) {
-                    KeyPresenceLabel(variable: "GROQ_API_KEY", isPresent: model.apiKeys.groq)
-                    KeyPresenceLabel(variable: "OPENAI_API_KEY", isPresent: model.apiKeys.openai)
-                    KeyPresenceLabel(variable: "ANTHROPIC_API_KEY", isPresent: model.apiKeys.anthropic)
-                }
-                .padding(.top, 10)
             }
 
-            Text("Any cleanup failure or timeout falls back to the raw transcript — your words are never lost to a flaky network. Keys live in `~/Library/Application Support/OpenWisper/.env`, tried in order Groq → OpenAI → Anthropic; with no key at all, cleanup is skipped and dictation keeps working offline.")
+            Text("If tidying fails or times out, you still get exactly what you said — your words are never lost to a flaky network. With no key at all, tidying is skipped and dictation keeps working offline.")
                 .formFootnote()
         }
     }
@@ -157,15 +252,15 @@ struct ModelPage: View {
 
             OWCard {
                 HStack(spacing: 8) {
-                    Button("Open Config File") { model.openConfigFile() }
+                    Button("Open Settings File") { model.openConfigFile() }
                         .buttonStyle(.owQuiet)
-                    Button("Reload Config") { model.reloadConfig() }
+                    Button("Reload Settings") { model.reloadConfig() }
                         .buttonStyle(.owQuiet)
                     Spacer(minLength: 0)
                 }
             }
 
-            Text("The hotkey, insertion mode, pill appearance and history size all live in `config.json`. Edit it and press Reload Config — no relaunch needed.")
+            Text("Advanced settings — the hotkey, paste behavior and more — live in config.json. Open it, edit, then click Reload.")
                 .formFootnote()
         }
     }
@@ -265,19 +360,104 @@ private struct EngineCard: View {
 
     private var tagline: String {
         switch kind {
-        case .local: return "whisper.cpp on this Mac. Offline and private."
-        case .groq: return "Whisper large-v3-turbo in Groq's cloud. Fast."
-        case .openai: return "OpenAI's hosted Whisper API."
-        case .auto: return "Local when a model exists, then Groq, then OpenAI."
+        case .local: return "On this Mac. Offline and private."
+        case .groq: return "In Groq's cloud. Fast."
+        case .openai: return "In OpenAI's cloud."
+        case .auto: return "On this Mac when possible, then Groq, then OpenAI."
         }
     }
 
     private var help: String {
         switch kind {
         case .local: return "Nothing leaves this machine."
-        case .groq: return "Needs GROQ_API_KEY in .env."
-        case .openai: return "Needs OPENAI_API_KEY in .env."
+        case .groq: return "Needs a Groq API key — add it below."
+        case .openai: return "Needs an OpenAI API key — add it below."
         case .auto: return "Hands-off: uses whatever is available."
+        }
+    }
+}
+
+// MARK: - API key row
+
+/// One provider: name, whether a key is saved, and the buttons to add,
+/// replace or remove one. The paste field appears inline under the row, so
+/// the whole flow — click, paste, save — happens on this page.
+private struct KeyRow: View {
+    @ObservedObject var model: MainWindowModel
+    let kind: APIKeyKind
+
+    private var hasKey: Bool { model.hasKey(kind) }
+    private var isEditing: Bool { model.editingKey == kind }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .center, spacing: 12) {
+                Image(systemName: hasKey ? "key.fill" : "key")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundStyle(hasKey ? Color.green : OWTheme.accent)
+                    .frame(width: 30, height: 30)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            .fill((hasKey ? Color.green : OWTheme.accent).opacity(0.11))
+                    )
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(name)
+                        .font(.system(size: 13, weight: .medium))
+                    Text(blurb)
+                        .font(.system(size: 11.5))
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer(minLength: 8)
+
+                Chip(
+                    text: hasKey ? "Key saved" : "No key",
+                    tint: hasKey ? .green : .secondary,
+                    systemImage: hasKey ? "checkmark" : "key.slash"
+                )
+
+                Button(hasKey ? "Replace…" : "Add Key…") { model.beginKeyEntry(kind) }
+                    .buttonStyle(.owQuiet)
+                if hasKey {
+                    Button("Remove") { model.removeKey(kind) }
+                        .buttonStyle(.owQuietDestructive)
+                }
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 11)
+
+            if isEditing {
+                HStack(spacing: 8) {
+                    SecureField("Paste your \(name) API key", text: $model.keyDraft)
+                        .textFieldStyle(.roundedBorder)
+                        .font(.system(size: 12, design: .monospaced))
+                        .onSubmit { model.saveKeyDraft() }
+                    Button("Save") { model.saveKeyDraft() }
+                        .buttonStyle(.owPrimary)
+                        .disabled(model.keyDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    Button("Cancel") { model.cancelKeyEntry() }
+                        .buttonStyle(.owQuiet)
+                }
+                .padding(.horizontal, 14)
+                .padding(.bottom, 11)
+            }
+        }
+    }
+
+    private var name: String {
+        switch kind {
+        case .groq: return "Groq"
+        case .openai: return "OpenAI"
+        case .anthropic: return "Anthropic"
+        }
+    }
+
+    private var blurb: String {
+        switch kind {
+        case .groq: return "Fast cloud transcription, plus transcript cleanup."
+        case .openai: return "Cloud transcription, plus transcript cleanup."
+        case .anthropic: return "Transcript cleanup with Claude."
         }
     }
 }

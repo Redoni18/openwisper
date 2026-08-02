@@ -15,9 +15,18 @@ macOS 14+. Built and tested on Apple Silicon (arm64).
   <img alt="OpenWisper's History page — every transcript one click from the clipboard" src="docs/screenshots/window-history-light.png">
 </picture>
 
-## Quick start
+## Get it
 
-Clone the repo, then:
+**Just want to use it?** [Download OpenWisper.dmg](https://github.com/Redoni18/openwisper/releases/latest/download/OpenWisper.dmg)
+(or visit the [website](https://redoni18.github.io/openwisper/)), open it, and
+drag OpenWisper into Applications. Because the app is not notarized with
+Apple, the first open needs one extra step: on macOS 15+ go to **System
+Settings → Privacy & Security → Open Anyway**; on macOS 14, right-click the
+app and choose **Open**. After that it opens normally. On first launch the
+app walks you through permissions and downloads its speech model with one
+click — no terminal involved.
+
+**Building from source?** Clone the repo, then:
 
 ```sh
 make setup
@@ -27,6 +36,9 @@ That builds whisper.cpp, downloads the default model, and installs and launches
 the app (a few minutes the first time). It opens on its Permissions page —
 grant the three approvals it lists ([Permissions](#permissions) explains each),
 then hold `fn` in any text field and talk. Everything below is the long form.
+
+To cut a distributable disk image from your build: `make dmg` produces
+`dist/OpenWisper.dmg` with a drag-to-Applications layout.
 
 ## How it feels
 
@@ -141,6 +153,7 @@ make install   # copy the bundle to /Applications
 | `make build` | `swift build -c release`. Requires `make deps` first. |
 | `make app` | Builds, then assembles `dist/OpenWisper.app` (`LSUIElement`, ad-hoc signed). |
 | `make install` | Runs `make app`, then replaces `/Applications/OpenWisper.app`. |
+| `make dmg` | Runs `make app`, then packages it into `dist/OpenWisper.dmg` — a drag-to-Applications disk image for distribution. |
 | `make smoke` | Offline end-to-end check: downloads `tiny.en` and transcribes a bundled JFK sample, printing the text and timings. Needs `make deps` first. The fastest way to confirm local transcription actually works. |
 | `make test` | Unit tests. |
 | `make run` | Dev run from the terminal. **Read the warning below.** |
@@ -150,6 +163,10 @@ make install   # copy the bundle to /Applications
 Everything above accepts `CONFIG=debug` if you want a debug build.
 
 ### Choosing a model
+
+The default model (`small.en`) can be downloaded from inside the app: the
+**Model** page shows a **Download** button whenever the model is missing.
+Other sizes are fetched from the command line:
 
 ```sh
 make model SIZE=small.en           # default
@@ -368,11 +385,16 @@ line in the log). You can safely keep only the keys you care about.
 | `history.enabled` | `true` | Keep a local record of every transcript OpenWisper inserts, in `~/Library/Application Support/OpenWisper/history.json`. `false` stops recording new ones — it does not delete what is already there. Same switch as **Save history** in the window. See [Privacy](#privacy). |
 | `history.maxEntries` | `200` | How many transcripts to keep; the oldest are dropped past this. Clamped to `1`…`10000`. Lowering it trims the file immediately, on the next reload. |
 
-### `.env` — API keys
+### API keys
 
-Keys live in a `.env` file, never in `config.json`. All of them are optional;
-without any, OpenWisper runs fully offline with local transcription and no
-cleanup.
+The easy way: open the app window (menu bar icon → **Open OpenWisper…**), go
+to the **Model** page, and click **Add Key…** next to Groq, OpenAI or
+Anthropic. The key is saved into the `.env` file below for you. Clicking the
+Groq or OpenAI engine card when it has no key opens the same field.
+
+Under the hood, keys live in a `.env` file, never in `config.json`. All of
+them are optional; without any, OpenWisper runs fully offline with local
+transcription and no cleanup.
 
 ```sh
 cp .env.example ~/Library/Application\ Support/OpenWisper/.env
@@ -525,7 +547,8 @@ Quitting that app releases it.
 
 ### "Whisper model not found"
 
-Run `make model`. Any size works — when `ggml-small.en.bin` is absent,
+Click **Download** on the app window's **Model** page, or run `make model`
+from a clone. Any size works — when `ggml-small.en.bin` is absent,
 OpenWisper falls back to the largest `ggml-*.bin` in the models folder, and an
 explicit `transcription.modelPath` overrides everything. If the error persists,
 check what is actually on disk with

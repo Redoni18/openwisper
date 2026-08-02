@@ -11,6 +11,20 @@ import Combine
 import OpenWisperCore
 import SwiftUI
 
+/// What the Model page's download card shows. Driven by `ModelDownloadEvent`s
+/// from the app; `idle` covers both "not started" and "finished" (the model's
+/// presence on disk is what distinguishes them).
+public enum ModelDownloadState: Equatable {
+    case idle
+    case downloading(fraction: Double?, receivedBytes: Int64)
+    case failed(String)
+
+    public var isDownloading: Bool {
+        if case .downloading = self { return true }
+        return false
+    }
+}
+
 @MainActor
 public final class MainWindowModel: ObservableObject {
 
@@ -45,6 +59,14 @@ public final class MainWindowModel: ObservableObject {
     /// The row whose Copy button is currently saying "Copied".
     @Published public private(set) var copiedEntry: UUID?
     @Published public var isConfirmingClear = false
+    /// The Model page's download card.
+    @Published public private(set) var modelDownload: ModelDownloadState = .idle
+    /// The provider whose key field is currently open, if any. One at a time —
+    /// pasting a key is a focused act, not a form to fill in.
+    @Published public var editingKey: APIKeyKind?
+    /// The key being typed/pasted. Cleared the moment it is saved or dismissed;
+    /// it exists only between the paste and the click.
+    @Published public var keyDraft = ""
 
     /// Resets `copiedEntry` a beat after a copy. Held so a second copy cancels
     /// the first one's reset instead of clearing the new confirmation early.
@@ -177,6 +199,73 @@ public final class MainWindowModel: ObservableObject {
 
     public var cleanupEnabledBinding: Binding<Bool> {
         Binding(get: { self.cleanupEnabled }, set: { self.setCleanupEnabled($0) })
+    }
+
+    // MARK: - Model download
+
+    /// Kick off the in-app download of the recommended local model. Idempotent
+    /// while one is running — the button is disabled then anyway.
+    public func startModelDownload() {
+        guard !modelDownload.isDownloading else { return }
+        modelDownload = .downloading(fraction: nil, receivedBytes: 0)
+        actions.downloadModel { [weak self] event in
+            guard let self else { return }
+            switch event {
+            case .progress(let fraction, let receivedBytes):
+                self.modelDownload = .downloading(fraction: fraction, receivedBytes: receivedBytes)
+            case .finished:
+                self.modelDownload = .idle
+                self.refresh()   // the model file now exists; the card must say so
+            case .cancelled:
+                self.modelDownload = .idle
+            case .failed(let message):
+                self.modelDownload = .failed(message)
+            }
+        }
+    }
+
+    public func cancelModelDownload() {
+        actions.cancelModelDownload()
+    }
+
+    // MARK: - API keys
+
+    /// Opens the paste field for one provider (closing any other). Toggles
+    /// closed when it is already open, so the same button dismisses it.
+    public func beginKeyEntry(_ kind: APIKeyKind) {
+        keyDraft = ""
+        editingKey = (editingKey == kind) ? nil : kind
+    }
+
+    public func cancelKeyEntry() {
+        keyDraft = ""
+        editingKey = nil
+    }
+
+    /// Saves the pasted key and closes the field. A draft that is all
+    /// whitespace is treated as "never mind", not as a removal.
+    public func saveKeyDraft() {
+        guard let kind = editingKey else { return }
+        let draft = keyDraft.trimmingCharacters(in: .whitespacesAndNewlines)
+        keyDraft = ""
+        editingKey = nil
+        guard !draft.isEmpty else { return }
+        actions.setAPIKey(kind, draft)
+        refresh()
+    }
+
+    public func removeKey(_ kind: APIKeyKind) {
+        if editingKey == kind { cancelKeyEntry() }
+        actions.setAPIKey(kind, nil)
+        refresh()
+    }
+
+    public func hasKey(_ kind: APIKeyKind) -> Bool {
+        switch kind {
+        case .groq: return apiKeys.groq
+        case .openai: return apiKeys.openai
+        case .anthropic: return apiKeys.anthropic
+        }
     }
 
     public func openConfigFile() { actions.openConfigFile() }

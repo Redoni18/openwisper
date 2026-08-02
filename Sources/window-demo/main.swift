@@ -294,6 +294,12 @@ final class WindowDemo: NSObject, NSApplicationDelegate {
             engineDetail: { "Local · ggml-small.en" },
             localModel: { LocalModelInfo(fileName: "ggml-small.en.bin", byteSize: 487_601_967) },
             apiKeys: { APIKeyPresence(groq: true, openai: false, anthropic: true) },
+            // Never the value — even a demo prints only presence.
+            setAPIKey: { kind, value in
+                print("  [demo] setAPIKey(\(kind.rawValue), \(value == nil ? "removed" : "saved"))")
+            },
+            downloadModel: { _ in print("  [demo] downloadModel()") },
+            cancelModelDownload: { print("  [demo] cancelModelDownload()") },
             isCleanupEnabled: { true },
             setCleanupEnabled: { print("  [demo] setCleanupEnabled(\($0))") },
             cleanupDetail: { "Groq · llama-3.1-8b-instant" },

@@ -11,7 +11,7 @@ DIST := dist
 APP := $(DIST)/OpenWisper.app
 LSREGISTER := /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister
 
-.PHONY: all setup deps model build app run smoke test install clean distclean check-deps
+.PHONY: all setup deps model build app dmg run smoke test install clean distclean check-deps
 
 all: build
 
@@ -41,6 +41,9 @@ build: check-deps
 
 app: build       ## Assemble + ad-hoc sign dist/OpenWisper.app
 	SWIFT="$(SWIFT)" bash scripts/make_app.sh $(CONFIG)
+
+dmg: app         ## Package dist/OpenWisper.app into a drag-to-install DMG
+	bash scripts/make_dmg.sh
 
 run: check-deps  ## Dev run from the terminal (TCC grants go to your terminal app, not OpenWisper!)
 	$(SWIFT) run -c $(CONFIG) OpenWisper
