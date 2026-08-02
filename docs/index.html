@@ -58,7 +58,10 @@
   .wrap { max-width: 880px; margin: 0 auto; padding: 0 24px; }
 
   /* ---- Hero ---- */
-  header { padding: 72px 0 56px; text-align: center; }
+  /* Compound selectors throughout: these blocks also carry .wrap, whose
+     `padding: 0 24px` would otherwise outrank element selectors and erase
+     all vertical spacing. */
+  header.wrap { padding: 96px 24px 72px; text-align: center; }
 
   .mark {
     width: 96px; height: 96px;
@@ -104,7 +107,7 @@
   .fineprint span { margin: 0 7px; }
 
   /* ---- Screenshot ---- */
-  .shot { padding: 8px 0 30px; }
+  .wrap.shot { padding: 8px 24px 48px; }
   .shot img {
     width: 100%; height: auto; display: block;
     border-radius: 14px;
@@ -113,7 +116,7 @@
   }
 
   /* ---- Sections ---- */
-  section { padding: 44px 0; }
+  section.wrap { padding: 56px 24px; }
 
   .kicker {
     font-size: 12px; font-weight: 600; letter-spacing: 0.09em;
@@ -170,8 +173,8 @@
     background: var(--cream);
     border: 1px solid color-mix(in srgb, var(--brown) 25%, transparent);
     border-radius: 14px;
-    padding: 22px 24px;
-    margin-top: 26px;
+    padding: 24px 26px;
+    margin-top: 44px;
   }
   .callout h3 { font-size: 16px; }
   .callout p { font-size: 14px; margin-top: 8px; }
