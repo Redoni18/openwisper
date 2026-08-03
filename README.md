@@ -68,7 +68,7 @@ and nothing is inserted.
 
 A single tap that you do not double is treated as an accidental `fn` press and
 discarded, so you can still use `fn` normally-ish. A hands-free session that you
-forget about stops itself at `transcription.maxSeconds` (2 minutes by default)
+forget about stops itself at `transcription.maxSeconds` (10 minutes by default)
 and inserts what it heard. Nothing to focus, no app to switch to — it works in
 Slack, Mail, a terminal, Xcode, a browser text box, all the same. (OpenWisper
 *has* a window, for [history and settings](#the-app-window); dictation never
@@ -350,7 +350,7 @@ line in the log). You can safely keep only the keys you care about.
                      "doubleTapWindowMs": 300 },
   "transcription": { "engine": "local", "modelPath": null, "language": "en",
                      "groqModel": "whisper-large-v3-turbo",
-                     "openaiModel": "whisper-1", "maxSeconds": 120 },
+                     "openaiModel": "whisper-1", "maxSeconds": 600 },
   "cleanup":       { "enabled": true, "provider": "auto", "model": null,
                      "timeoutSeconds": 6 },
   "insert":        { "mode": "paste", "restoreClipboardDelayMs": 600,
@@ -371,7 +371,7 @@ line in the log). You can safely keep only the keys you care about.
 | `transcription.language` | `"en"` | ISO 639-1 code (`"en"`, `"de"`, `"fr"`, …) or `"auto"` to let whisper detect. Leave at `"en"` with any `.en` model — they are English-only. |
 | `transcription.groqModel` | `"whisper-large-v3-turbo"` | Model used when `engine` resolves to `groq`. |
 | `transcription.openaiModel` | `"whisper-1"` | Model used when `engine` resolves to `openai`. |
-| `transcription.maxSeconds` | `120` | Hard cap on a single utterance. Audio past this is dropped — and a hands-free session (a locked `flow` session, or `toggle`) stops itself here and inserts what it heard, so walking away never leaves the mic open. |
+| `transcription.maxSeconds` | `600` | Hard cap on a single utterance. Audio past this is dropped — and a hands-free session (a locked `flow` session, or `toggle`) stops itself here and inserts what it heard, so walking away never leaves the mic open. |
 | `cleanup.enabled` | `true` | `false` pastes the raw transcript and never touches the network for cleanup. |
 | `cleanup.provider` | `"auto"` | `auto` — first provider that has a key, in order Groq → OpenAI → Anthropic. Or name one: `groq`, `openai`, `anthropic`. **With no keys at all, cleanup is silently skipped and dictation keeps working offline.** |
 | `cleanup.model` | `null` | `null` uses the provider default: Groq `llama-3.1-8b-instant`, OpenAI `gpt-4o-mini`, Anthropic `claude-haiku-4-5-20251001`. |

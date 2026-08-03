@@ -102,7 +102,7 @@ default). Schema (defaults shown):
                      "doubleTapWindowMs": 300 },
   "transcription": { "engine": "local", "modelPath": null, "language": "en",
                      "groqModel": "whisper-large-v3-turbo",
-                     "openaiModel": "whisper-1", "maxSeconds": 120 },
+                     "openaiModel": "whisper-1", "maxSeconds": 600 },
   "cleanup":       { "enabled": true, "provider": "auto", "model": null,
                      "timeoutSeconds": 6 },
   "insert":        { "mode": "paste", "restoreClipboardDelayMs": 600,

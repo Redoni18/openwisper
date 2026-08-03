@@ -72,7 +72,7 @@ public struct TranscriptionConfig: Codable {
         language: String = "en",
         groqModel: String = Defaults.groqSTTModel,
         openaiModel: String = Defaults.openaiSTTModel,
-        maxSeconds: Int = 120
+        maxSeconds: Int = 600
     ) {
         self.engine = engine
         self.modelPath = modelPath
