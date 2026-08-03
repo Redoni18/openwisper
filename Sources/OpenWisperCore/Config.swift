@@ -12,9 +12,16 @@ extension KeyedDecodingContainer {
 }
 
 public struct HotkeyConfig: Codable {
-    /// Named key: "fn", "rightCommand", "leftCommand", "rightOption", "leftOption",
+    /// Single named key: "fn", "rightCommand", "leftCommand", "rightOption", "leftOption",
     /// "leftControl", "rightControl", "f13"..."f19", or "keycode:NN" for a raw CGKeyCode.
+    /// Ignored when `keys` supplies at least one key — see `effectiveKeys`.
     public var key: String
+    /// Several keys, any of which triggers dictation. Same vocabulary as `key`.
+    /// The point is mixed-keyboard setups: external (non-Apple) keyboards handle
+    /// `fn` in firmware and never report it to macOS, so `["fn", "rightCommand"]`
+    /// keeps the built-in keyboard on `fn` while giving the external one a key
+    /// that actually arrives. nil (the default) means "just `key`".
+    public var keys: [String]?
     /// How the hotkey drives dictation. Unknown values fall back to "flow".
     /// - "flow" (default): hold to talk, or double-tap to lock hands-free until
     ///   the next tap stops it.
@@ -32,22 +39,39 @@ public struct HotkeyConfig: Codable {
 
     public init(
         key: String = "fn",
+        keys: [String]? = nil,
         mode: String = "flow",
         minHoldMs: Int = 250,
         doubleTapWindowMs: Int = 300
     ) {
         self.key = key
+        self.keys = keys
         self.mode = mode
         self.minHoldMs = minHoldMs
         self.doubleTapWindowMs = doubleTapWindowMs
     }
 
-    enum CodingKeys: String, CodingKey { case key, mode, minHoldMs, doubleTapWindowMs }
+    /// The keys actually bound: `keys` when it carries anything usable, else the
+    /// single `key`. Blank and whitespace-only entries are dropped, so a list
+    /// that is empty (or all blanks) falls back to `key` rather than to nothing.
+    /// Never empty.
+    public var effectiveKeys: [String] {
+        if let keys = keys {
+            let cleaned = keys
+                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                .filter { !$0.isEmpty }
+            if !cleaned.isEmpty { return cleaned }
+        }
+        return [key]
+    }
+
+    enum CodingKeys: String, CodingKey { case key, keys, mode, minHoldMs, doubleTapWindowMs }
     public init(from decoder: Decoder) throws {
         let d = HotkeyConfig()
         guard let c = try? decoder.container(keyedBy: CodingKeys.self) else { self = d; return }
         self.init(
             key: c.ow(.key, d.key),
+            keys: c.owOptional(.keys),
             mode: c.ow(.mode, d.mode),
             minHoldMs: c.ow(.minHoldMs, d.minHoldMs),
             doubleTapWindowMs: c.ow(.doubleTapWindowMs, d.doubleTapWindowMs)

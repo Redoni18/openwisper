@@ -231,8 +231,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         do {
             try listener.start()
             hotkeyFailure = nil
+            let keys = config.hotkey.effectiveKeys.joined(separator: "\", \"")
             Log.app.info(
-                "Hotkey \"\(self.config.hotkey.key, privacy: .public)\" armed in \(self.config.hotkey.mode, privacy: .public) mode"
+                "Hotkey \"\(keys, privacy: .public)\" armed in \(self.config.hotkey.mode, privacy: .public) mode"
             )
         } catch OWError.inputMonitoringNotGranted {
             hotkeyFailure = "hotkey off, grant Input Monitoring"
@@ -677,7 +678,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             buildController()
         }
 
-        if previous.hotkey.key != config.hotkey.key || listener?.isRunning != true {
+        if previous.hotkey.effectiveKeys != config.hotkey.effectiveKeys || listener?.isRunning != true {
             startHotkeyListener()
         }
 

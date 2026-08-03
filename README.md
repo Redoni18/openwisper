@@ -324,6 +324,21 @@ function key you never use is the least intrusive choice:
 "hotkey": { "key": "f13" }
 ```
 
+### If you use an external keyboard
+
+Most non-Apple keyboards (Logitech, Keychron and friends) handle `fn` entirely
+in their own firmware and **never send it to macOS**, so OpenWisper cannot see
+it — the hotkey works on the built-in keyboard and does nothing on the external
+one. Bind more than one key with `keys`, and any of them starts dictation:
+
+```json
+"hotkey": { "keys": ["fn", "rightCommand"] }
+```
+
+That keeps `fn` on the laptop keyboard and gives the external one a key that
+actually arrives. `keys` takes the same names as `key` and replaces it when
+present.
+
 ### Verifying
 
 With all three granted and the app relaunched: open TextEdit, hold the hotkey,
@@ -362,7 +377,8 @@ line in the log). You can safely keep only the keys you care about.
 
 | Key | Default | Values / notes |
 |---|---|---|
-| `hotkey.key` | `"fn"` | `fn`, `rightCommand`, `leftCommand`, `rightOption`, `leftOption`, `leftControl`, `rightControl`, `f13`…`f19`, or `keycode:NN` for a raw key code. |
+| `hotkey.key` | `"fn"` | `fn`, `rightCommand`, `leftCommand`, `rightOption`, `leftOption`, `leftControl`, `rightControl`, `leftShift`, `rightShift`, `f13`…`f19`, or `keycode:NN` for a raw key code. Ignored when `hotkey.keys` is set. |
+| `hotkey.keys` | absent | A list of keys — same names as `hotkey.key` — **any** of which starts dictation, e.g. `["fn", "rightCommand"]`. Meant for mixed-keyboard setups: external keyboards usually handle `fn` in firmware and never report it to macOS, so give them a second key. Overrides `hotkey.key` when it lists at least one key; leave it out to keep the single-key behavior. |
 | `hotkey.mode` | `"flow"` | `flow` — hold to talk, **or** double-tap to lock hands-free (tap once more to stop; `Esc` cancels; auto-stops at `transcription.maxSeconds`). `hold` — pure push-to-talk, records only while held. `toggle` — tap to start, tap again to stop. Anything else falls back to `flow`. |
 | `hotkey.minHoldMs` | `250` | The tap-vs-hold threshold. In `hold` mode a press shorter than this is discarded as an accidental tap; in `flow` mode it is what makes a press a *tap* — the thing that opens the double-tap window instead of ending the utterance. |
 | `hotkey.doubleTapWindowMs` | `300` | `flow` mode only: how long after a tap a second tap still locks the session hands-free. A tap nobody doubles inside this window is discarded as accidental. `0` disables the hands-free lock, leaving hold-to-talk. |
@@ -478,8 +494,12 @@ In order of likelihood:
 3. **macOS still owns `fn`.** System Settings → Keyboard → `Press 🌐 key to` →
    **Do Nothing**, and check the Dictation shortcut. If holding `fn` opens the
    emoji picker, this is your problem.
-4. **Dictation is toggled off** in the menu bar item.
-5. **You are in a password field.** See [Nothing happens in password
+4. **You are typing on an external keyboard.** Most non-Apple keyboards swallow
+   `fn` in firmware, so macOS — and therefore OpenWisper — never sees it. Bind a
+   second key: see [If you use an external
+   keyboard](#if-you-use-an-external-keyboard).
+5. **Dictation is toggled off** in the menu bar item.
+6. **You are in a password field.** See [Nothing happens in password
    fields](#nothing-happens-in-password-fields).
 
 ### Pasting does nothing

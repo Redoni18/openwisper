@@ -64,6 +64,7 @@ README accuracy pass, final report.
 | Wave E solo UI restyle (Fable, operator-requested solo) | done — see Wave E below; 107/107 green after, six snapshots (light+dark) inspected, bundle launch/reopen/quit clean |
 | Wave F distribution & consumer polish (Fable 5 + Cursor 4.5 fleet) | done — see Wave F below |
 | Deploy/TCC repair (Fable) | done — operator hit "two OpenWispers" + grants that never stuck: dist *and* /Applications were LS-registered under one bundle ID with different ad-hoc CDHashes, and `make install` used to replace the bundle under a running instance (zombie + single-instance guard = launches silently swallowed). Fixes: install pre-quits and relaunches, `lsregister -f` install / `-u` dist, `make_app.sh` auto-picks the "OpenWisper Dev" identity when present, modal onboarding replaced by the window's Permissions page. README updated (tccutil clean-slate block). |
+| Multi-key hotkey (Opus 4.8, verified by Fable) | done — `hotkey.keys` binds several keys at once (`["fn", "rightCommand"]`) so external keyboards, which swallow `fn` in firmware and never report it to macOS, can drive dictation too; `HotkeyListener` resolves and dedupes every key and aggregates them into one down/up via `HotkeyPressAggregator` (down on the first key pressed, up on the last released), leaving `DictationController` untouched; `key` still works exactly as before when `keys` is absent. 133/133 tests green (16 new), `make app` clean |
 
 ## Wave F — distribution & consumer polish
 

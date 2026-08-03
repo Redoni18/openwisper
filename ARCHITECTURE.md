@@ -113,8 +113,14 @@ default). Schema (defaults shown):
 ```
 
 Hotkey names: `fn`, `rightCommand`, `leftCommand`, `rightOption`, `leftOption`,
-`leftControl`, `rightControl`, `f13`…`f19`, or `keycode:NN`. `.env` lives next
-to config.json (process env and a repo-root `.env` override it for dev runs).
+`leftControl`, `rightControl`, `leftShift`, `rightShift`, `f13`…`f19`, or
+`keycode:NN`. An optional `"keys": ["fn", "rightCommand"]` binds several at once
+— any of them drives dictation, which is how a mixed built-in/external keyboard
+setup works (external keyboards usually eat `fn` in firmware and never report it
+to macOS). `keys` replaces `key` when it lists at least one name; the listener
+dedupes by keycode and reports down on the first key pressed, up on the last
+released. `.env` lives next to config.json (process env and a repo-root `.env`
+override it for dev runs).
 
 `hotkey.mode` is `flow` (default: hold-to-talk *and* double-tap-to-lock on the
 same key) · `hold` (pure push-to-talk) · `toggle` (tap on, tap off); anything

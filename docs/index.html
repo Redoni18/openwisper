@@ -291,7 +291,8 @@
       <div>
         <b>Hold <kbd>fn</kbd> and talk</b>
         <p>In any text field: hold the key, speak, let go. Your words appear
-        right where your cursor is. Double-tap instead to dictate hands-free.</p>
+        right where your cursor is. Double-tap instead to dictate hands-free.
+        On an external keyboard, use a different key — see below.</p>
       </div>
     </li>
   </ol>
@@ -311,6 +312,23 @@
     Prefer to see exactly what you’re running? The full source code is
     <a href="https://github.com/Redoni18/openwisper">on GitHub</a>, and you
     can build it yourself.</p>
+  </div>
+
+  <div class="callout">
+    <h3>&#9000;&#65039; Using an external keyboard?</h3>
+    <p>On most non-Apple keyboards (Logitech and the like) the <kbd>fn</kbd>
+    key is handled inside the keyboard itself, so your Mac — and OpenWisper —
+    never sees it pressed. The fix: tell OpenWisper to listen for a second
+    key as well, one your keyboard does report.</p>
+    <p>Click the menu bar microphone, choose <b>Advanced Settings File</b>,
+    and change the <b>hotkey</b> section to list both keys:</p>
+    <p><kbd>"keys": ["fn", "rightCommand"]</kbd></p>
+    <p>Save the file and you’re done — <kbd>fn</kbd> keeps working on the
+    built-in keyboard, and the right <kbd>&#8984;&nbsp;command</kbd> key
+    starts dictation from the external one. Any key from the
+    <a href="https://github.com/Redoni18/openwisper#configuration">configuration
+    reference</a> works, including <kbd>rightControl</kbd>, <kbd>rightOption</kbd>
+    and <kbd>f13</kbd>–<kbd>f19</kbd>.</p>
   </div>
 </section>
 
